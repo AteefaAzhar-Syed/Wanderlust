@@ -13,7 +13,12 @@ module.exports.showListing = async (req, res) => {
     const { id } = req.params;
 
     const listing = await Listing.findById(id)
-        .populate("reviews")
+        .populate({
+            path: "reviews",
+            populate: {
+                path: "author",
+            },
+        })
         .populate("owner");
 
     res.render("listings/show.ejs", {
@@ -21,7 +26,6 @@ module.exports.showListing = async (req, res) => {
         mapToken: process.env.MAPTILER_API_KEY
     });
 };
-
 
 module.exports.createListing = async (req, res) => {
   let url = req.file.path;

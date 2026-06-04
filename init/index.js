@@ -22,15 +22,49 @@ main()
     console.log(err);
   });
 
+// const initDB = async () => {
+//   await Listing.deleteMany({});
+
+//   initData.data = initData.data.map((obj) => ({
+//     ...obj,
+//     owner: "6a1d350f2693b27ad3135491", // demo user ID from Atlas
+//   }));
+
+//   await Listing.insertMany(initData.data);
+
+//   console.log("Data was initialized");
+// };
+
 const initDB = async () => {
   await Listing.deleteMany({});
 
-  initData.data = initData.data.map((obj) => ({
-    ...obj,
-    owner: "6a1d350f2693b27ad3135491", // demo user ID from Atlas
-  }));
+  const seededData = await Promise.all(
+    initData.data.map(async (obj) => {
+      const query = `${obj.location} ${obj.country}`;
 
-  await Listing.insertMany(initData.data);
+      const geoRes = await fetch(
+        `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${process.env.MAPTILER_API_KEY}`
+      );
 
+      const geoData = await geoRes.json();
+
+      let coordinates = [0, 0];
+
+      if (geoData.features && geoData.features.length > 0) {
+        coordinates = geoData.features[0].geometry.coordinates;
+      }
+
+      return {
+        ...obj,
+        owner: "6a1d350f2693b27ad3135491",
+        geometry: {
+          type: "Point",
+          coordinates,
+        },
+      };
+    })
+  );
+
+  await Listing.insertMany(seededData);
   console.log("Data was initialized");
 };
